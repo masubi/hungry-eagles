@@ -1,0 +1,44 @@
+/* CPSC545 Spring2011 Programming Assignment 1
+* login: masuij(login used to submit)
+* Linux
+* date: 03/28/11
+* name: Justin Masui,
+* emails: veks11@gmail.com*/
+
+
+####################################
+ The purpose of your program
+####################################
+
+A family of eagles has one mother eagle, n baby eagles, and m feeding pots initially empty, where 0 < m <= n. Each baby eagle must eat using a feeding pot and each feeding pot can only serve one baby eagle at any time. Therefore, no more than m baby eagles can eat at the same time. The mother eagle eats elsewhere and does not require a feeding pot. All feeding pots are assumed to be empty at the very beginning and the mother eagle is sleeping.
+
+
+####################################
+ How to compile the program
+####################################
+
+To compile:
+
+make 
+
+
+To clean:
+
+make clean
+
+####################################
+ How to use the program from the shell (syntax)
+####################################
+
+
+
+####################################
+Expected Output
+####################################  
+
+
+
+####################################
+ What exactly your program does
+####################################  
+
