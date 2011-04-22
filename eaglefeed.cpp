@@ -1,3 +1,10 @@
+/* CPSC545 Spring2011 Project 2
+* login: masuij(login used to submit)
+* Linux
+* date: 03/28/11
+* name: Justin Masui,
+* emails: veks11@gmail.com*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -8,8 +15,10 @@
 #include <time.h>
 #include <semaphore.h>
 
+#define MOTHEREAGLE_SLEEP_TIME 1
 #define BABYEAGLE_PLAY_TIME 2
 #define BABYEAGLE_EAT_TIME 2
+#define MAXLOOPS 3
 
 using namespace std;
 
@@ -20,9 +29,11 @@ using namespace std;
 int numFeedingPots;
 int numBabyEagles;
 int numFeedings;
+int fullPots;
 
-sem_t sem_motherEagle;
-
+sem_t s;
+sem_t motherEagle;
+pthread_mutex_t lk;
 
 /*blocks the caller, a baby eagle, if all feeding pots are empty. One and only one baby eagle who finds out all feeding pots being empty should wake up the mother eagle. This function returns only if there is a feeding pot with food available to this baby eagle.*/
 void ready_to_eat();
@@ -41,13 +52,14 @@ int pthread_sleep (int seconds);
 
 /*thread for the momma eagle*/
 void *motherEagleThread_func(void *tmp){
-	cout<<"mother thread"<<endl;
+	cout<<"Mother eagle started."<<endl;
 
-    for(int i=0;i<10;i++){
-        pthread_sleep(BABYEAGLE_PLAY_TIME);
+    for(int i=0;i<MAXLOOPS;i++){
+        pthread_sleep(MOTHEREAGLE_SLEEP_TIME);
         goto_sleep();
-        pthread_sleep(BABYEAGLE_EAT_TIME);
+        pthread_sleep(MOTHEREAGLE_SLEEP_TIME);
         food_ready();
+		cout<<"Mother eagle says \"Feeding ("<<i<<")\""<<endl;
     }
 	return (void*)NULL;
     
@@ -56,9 +68,8 @@ void *motherEagleThread_func(void *tmp){
 
 /*thread for the baby eagle*/
 void *babyEagleThread_func(void *tmp){
-	cout<<"baby thread"<<endl;
-
-    for(int i=0;i<10;i++){
+	cout<<"    Baby eagle started."<<endl;
+    for(int i=0;i<MAXLOOPS;i++){
         pthread_sleep(BABYEAGLE_PLAY_TIME);
         ready_to_eat();
         pthread_sleep(BABYEAGLE_EAT_TIME);
@@ -68,8 +79,7 @@ void *babyEagleThread_func(void *tmp){
 }
 
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
 		
     if (argc != 4) {
         cerr << "Invalid command line - usage: <numFeedingPots> <numBabyEagles> <numFeedings>" << endl;
@@ -79,9 +89,11 @@ int main(int argc, char *argv[])
 	numFeedingPots=(int)atoi(argv[1]);
 	numBabyEagles=(int)atoi(argv[2]);
 	numFeedings=(int)atoi(argv[3]);
+	fullPots=0;
 
     //int sem_init(sem_t *sem, int pshared, unsigned int value);
-    sem_init(&sem_motherEagle, 0, 1);
+    sem_init(&s, 0, numFeedingPots);
+    sem_init(&motherEagle, 0, 0);
 	
 	//cout<<numFeedingPots<<numBabyEagles<<numFeedings<<endl;
 	pthread_t motherEagle_tid;
@@ -112,7 +124,10 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 	}
-    pthread_join(motherEagle_tid, &status);
+  
+	//void *status;
+	pthread_join(motherEagle_tid, &status);
+	cout<<"Mother eagle retires after serving "<<numFeedings+1<<".  Game ends!!!"<<endl;
 	return 0;
 }
 
@@ -120,21 +135,37 @@ int main(int argc, char *argv[])
 
 /*blocks the caller, a baby eagle, if all feeding pots are empty. One and only one baby eagle who finds out all feeding pots being empty should wake up the mother eagle. This function returns only if there is a feeding pot with food available to this baby eagle.*/
 void ready_to_eat(){
-    cout<<"ready to eat"<<endl;
+    cout<<"Baby eagle ready to eat"<<endl;
+	pthread_mutex_lock(&lk);
+	if(fullPots>0){
+		fullPots--;
+		sem_wait(&s);
+		pthread_mutex_unlock(&lk);
+	}else if(fullPots==0){
+		cout<<"Mother eagle is awoke by baby eagle and starts preparing food."<<endl;
+		pthread_mutex_unlock(&lk);
+		sem_post(&motherEagle);
+
+	}
 }
 
 /*should be called when a baby eagle finishes his meal.*/
 void finish_eating(){
-    cout<<"finish_eating"<<endl;
+    cout<<"Baby eagle finished eating"<<endl;
 }
 
 /*is only called by the mother eagle when she wants to take a nap.*/
 void goto_sleep(){
-    cout<<"go to sleep"<<endl;
+    cout<<"Mother eagle takes a nap"<<endl;
+	sem_wait(&motherEagle);
 }
+
 /*is called when the mother eagle has finished adding food in all m feeding pots.*/
 void food_ready(){
-    cout<<"food ready"<<endl;
+    cout<<"Mother Eagle finished adding food"<<endl;
+	pthread_mutex_lock(&lk);
+	fullPots=numFeedingPots;
+	pthread_mutex_unlock(&lk);
 }
 
 
