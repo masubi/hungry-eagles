@@ -177,24 +177,30 @@ void food_ready(int nthServing){
 
     pthread_mutex_lock(&lk);
 	
+
+	
+	alreadyWoken=false;
+	fullPots=numFeedingPots;
+	pthread_mutex_unlock(&lk);
+	
 	//wake up waiting baby eagles
 	int semVal;
 	sem_getvalue(&s, &semVal);
 	cout<<"----------------"<<endl;
 	cout<<"before semVal="<<semVal<<endl;
 	cout<<"----------------"<<endl;
-	int numSignals=numWaitingBabyEagles;
-	for(int i=0;i<numBabyEagles;i++){
-		numWaitingBabyEagles--;
+	//int numSignals=numWaitingBabyEagles;
+	cout<<"numWaitingBabyEagles: "<<numWaitingBabyEagles<<endl;
+	cout<<"numFeedingPots: "<<numFeedingPots<<endl;
+	for(int i=0;i<numFeedingPots;i++){
+		//numWaitingBabyEagles--;
 		sem_post(&s);
 	}
 	sem_getvalue(&s, &semVal);
 	cout<<"----------------"<<endl;
 	cout<<"after semVal="<<semVal<<endl;
 	cout<<"----------------"<<endl;
-	alreadyWoken=false;
-	fullPots=numFeedingPots;
-	pthread_mutex_unlock(&lk);
+	
 	cout<<"Mother eagle says \"Feeding ("<<nthServing<<")\""<<endl;
 }
 
