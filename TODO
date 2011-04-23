@@ -1,0 +1,10 @@
+TODO
+-  Get printing to work right with correct number of indentations
+-  rename semaphores to better names
+-  separate waiting babyEagles from can consume or not
+x  rename itoa to itos
+-  handle eagle threads which do not exit at end because waiting
+
+Questions:
+1.  How to handle thread starvation
+2.  How to handle screen interaction e.g. have to us locks so lines don't x  Why does sem not become negative? - posix semaphores don't become negative
