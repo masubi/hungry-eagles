@@ -1,10 +1,33 @@
 TODO
--  Get printing to work right with correct number of indentations
--  rename semaphores to better names
--  separate waiting babyEagles from can consume or not
+x  Get printing to work right with correct number of indentations
+x  rename semaphores to better names
+x  separate waiting babyEagles from can consume or not
 x  rename itoa to itos
--  handle eagle threads which do not exit at end because waiting
+x  handle eagle threads which do not exit at end because waiting
+x  babyEagle threads exit after all pots empty
+-  make sure headers on all pages match correctly
+-  double check printing lines are correct
+-  remove unnecessary debugging statements
+-  finish readme
 
 Questions:
 1.  How to handle thread starvation
 2.  How to handle screen interaction e.g. have to us locks so lines don't x  Why does sem not become negative? - posix semaphores don't become negative
+3.  motherRetired flag is only read, does it need to mutex protected?
+
+Recent Changes
+- changed the names of semaphore s to semNumFeedingPots
+- changed the name of lk to mutFeedingPots
+- Added a wake all children when motherEagle is retired.  It basically sem_posts up to the numWaitingBabyEagles.  The problem I was having was that waiting BabyEagles would continue to wait even after motherEagle retired so the joins in main never completed.  This is fixed now.
+- Added strSpaces(int numSpaces) - returns a string with the number of spaces
+- changed itoa() to itos()
+- changed call cout to safePrint() with appropriate eagleId indentations
+- rewrote read_to_eat: added another semaphore semWaiting which initializes 0 initially since there should be no pots open.  When there are fullPot==0, then it waits on this semWaiting semaphore.  Then when motherEagle wakes up, it semPost the number of waiting babyEagles on semWaiting.  Note:  since posix semaphores are always non-negative, i had to add another variable int numWaitingBabyEagles.  This unfortunately makes that semaphore more like a queue than an actual semaphore.  Anyway, I do not think this is the right solution.  I checked against this:  http://www.codeproject.com/KB/threads/mutexrw.aspx.  This looks more correct and doesn't use as many locks.  At the same time, I can't seem to make this model work with the assignment.
+
+
+
+
+
+reference:
+
+http://www.csc.villanova.edu/~mdamian/threads/posixsem.html
