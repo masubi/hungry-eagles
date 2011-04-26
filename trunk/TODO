@@ -11,9 +11,8 @@ x  babyEagle threads exit after all pots empty
 -  finish readme
 
 Questions:
-1.  How to handle thread starvation
-2.  How to handle screen interaction e.g. have to us locks so lines don't x  Why does sem not become negative? - posix semaphores don't become negative
-3.  motherRetired flag is only read, does it need to mutex protected?
+x  How to handle thread starvation - A:  doesn't matter
+x  How to handle screen interaction e.g. have to us locks so lines don't x  Why does sem not become negative? - posix semaphores don't become negative
 
 Recent Changes
 - changed the names of semaphore s to semNumFeedingPots

@@ -48,8 +48,8 @@ bool motherRetired=false;  //TODO:  Needs to be protected
 sem_t semFeedingPots; //value is equivalent to the number of feedingPots available
 sem_t motherEagle; //0 means motherEagle is sleeping, 1 means motherEagle is active
 sem_t semWaiting;
-pthread_mutex_t mutFeedingPots;//locking the feedingPots
-pthread_mutex_t tty_lk;//locking the tty
+pthread_mutex_t mutFeedingPots=PTHREAD_MUTEX_INITIALIZER;//locking the feedingPots
+pthread_mutex_t tty_lk=PTHREAD_MUTEX_INITIALIZER;//locking the tty
 
 /*is only called by the mother eagle when she wants to take a nap.*/
 void goto_sleep();
@@ -174,6 +174,13 @@ int main(int argc, char *argv[]){
 	pthread_join(motherEagle_tid, &status);
 
 	cout<<"Mother eagle retires after serving "<<numFeedings<<".  Game ends!!!"<<endl;
+
+    //clean up
+    sem_destroy(&semFeedingPots); 
+    sem_destroy(&motherEagle);
+    sem_destroy(&semWaiting);
+    pthread_mutex_destroy(&mutFeedingPots);
+    pthread_mutex_destroy(&tty_lk);
 	return 0;
 }
 
@@ -206,7 +213,7 @@ void food_ready(int nthServing){
 	cout<<"DEBUG:  numFeedingPots: "<<numFeedingPots<<endl;
 	for(int i=0;i<numFeedingPots;i++){
 		numWaitingBabyEagles--;
-		sem_post(&semFeedingPots);
+		//sem_post(&semFeedingPots);
 		sem_post(&semWaiting);
 	}
 	sem_getvalue(&semFeedingPots, &semVal);
