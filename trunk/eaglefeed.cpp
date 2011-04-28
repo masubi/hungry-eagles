@@ -2,8 +2,8 @@
 * login: masuij(login used to submit)
 * Linux
 * date: 03/28/11
-* name: Justin Masui,
-* emails: veks11@gmail.com*/
+* name: Justin Masui, Jeffrey Wong
+* emails: veks11@gmail.com, xterase2001@gmail.com*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +19,8 @@
 #define MOTHEREAGLE_SLEEP_TIME 1
 #define BABYEAGLE_PLAY_TIME 2
 #define BABYEAGLE_EAT_TIME 2
+#define DEFAULT "10"
+#define ARGS_MAX 4
 
 using namespace std;
 /************************/
@@ -43,11 +45,11 @@ int fullPots;
 
 int numWaitingBabyEagles=0;
 bool alreadyWoken=false;
-bool motherRetired=false;  //TODO:  Needs to be protected
+bool motherRetired=false;
 
 sem_t semFeedingPots; //value is equivalent to the number of feedingPots available
 sem_t motherEagle; //0 means motherEagle is sleeping, 1 means motherEagle is active
-sem_t semWaiting;
+sem_t semWaiting;  // number of waiting baby eagles that are ready to eat
 pthread_mutex_t mutFeedingPots=PTHREAD_MUTEX_INITIALIZER;//locking the feedingPots
 pthread_mutex_t tty_lk=PTHREAD_MUTEX_INITIALIZER;//locking the tty
 
@@ -121,16 +123,21 @@ void *babyEagleThread_func(void *babyEagleArgs){
 
 int main(int argc, char *argv[]){
 		
-    if (argc != 4) {
+    if (argc != ARGS_MAX) {
         cerr << "Invalid command line - usage: <numFeedingPots> <numBabyEagles> <numFeedings>" << endl;
         exit(-1);
     }
+	
+	for(int i=1; i<ARGS_MAX; i++){
+		if((int)atoi(argv[i]) == 0)
+			argv[i] = DEFAULT;
+	}
 	
 	numFeedingPots=(int)atoi(argv[1]);
 	numBabyEagles=(int)atoi(argv[2]);
 	numFeedings=(int)atoi(argv[3]);
 	fullPots=0;
-
+	
     sem_init(&semFeedingPots, 0, numFeedingPots);
     sem_init(&motherEagle, 0, 0);
 	sem_init(&semWaiting, 0, 0);
@@ -159,7 +166,6 @@ int main(int argc, char *argv[]){
 		}
 	}
 
-
     //do joins
     void *status;
     for(int t=0; t<numBabyEagles; t++) {
@@ -173,7 +179,7 @@ int main(int argc, char *argv[]){
 	//void *status;
 	pthread_join(motherEagle_tid, &status);
 
-	cout<<"Mother eagle retires after serving "<<numFeedings<<".  Game ends!!!"<<endl;
+	cout<<"Mother eagle retires after serving "<<numFeedings<<" feedings.  Game ends!!!"<<endl;
 
     //clean up
     sem_destroy(&semFeedingPots); 
@@ -194,34 +200,22 @@ void goto_sleep(){
 void food_ready(int nthServing){
 
     pthread_mutex_lock(&mutFeedingPots);
-	
 
-	
 	alreadyWoken=false;
 	fullPots=numFeedingPots;
-	cout<<"Mother eagle says \"Feeding ("<<nthServing<<")\""<<endl;
+	cout<<"Mother eagle says \"Feeding ("<<nthServing + 1<<")\""<<endl;
 	pthread_mutex_unlock(&mutFeedingPots);
 	
 	//wake up waiting baby eagles
 	int semVal;
 	sem_getvalue(&semFeedingPots, &semVal);
-	cout<<"----------------"<<endl;
-	cout<<"before semVal="<<semVal<<endl;
-	cout<<"----------------"<<endl;
-	//int numSignals=numWaitingBabyEagles;
-	cout<<"DEBUG:  numWaitingBabyEagles: "<<numWaitingBabyEagles<<endl;
-	cout<<"DEBUG:  numFeedingPots: "<<numFeedingPots<<endl;
+
 	for(int i=0;i<numFeedingPots;i++){
 		numWaitingBabyEagles--;
-		//sem_post(&semFeedingPots);
+
 		sem_post(&semWaiting);
 	}
-	sem_getvalue(&semFeedingPots, &semVal);
-	cout<<"----------------"<<endl;
-	cout<<"after semVal="<<semVal<<endl;
-	cout<<"----------------"<<endl;
-	
-
+	sem_getvalue(&semFeedingPots, &semVal);	
 }
 
 
@@ -233,7 +227,8 @@ void ready_to_eat(int eagleId){
 	while(fed==false){
 
 		pthread_mutex_lock(&mutFeedingPots);
-		if(motherRetired==false && fullPots>0){
+		
+		if(fullPots>0){
 			sem_wait(&semFeedingPots);
 			cout<<strSpaces(eagleId)<<"Baby eagle "<<eagleId<<" is eating using feeding pot "<< fullPots <<endl;
 			cout.flush();
@@ -253,26 +248,13 @@ void ready_to_eat(int eagleId){
 			numWaitingBabyEagles++;
 			pthread_mutex_unlock(&mutFeedingPots);
 
-			//safePrint("DEBUG:  Baby eagle "+itos(eagleId)+" hungry, Waiting");
 			sem_wait(&semWaiting);
-			//safePrint("DEBUG:  Baby eagle "+itos(eagleId)+" hungry, NOT Waiting");
 			
-		}else if(motherRetired==true && fullPots >0){
-			sem_wait(&semFeedingPots);		
-			cout<<strSpaces(eagleId)<<"Baby eagle "<<eagleId<<" is eating using feeding pot "<< fullPots <<endl;
-			fullPots--;	
-			fed=true;
-			cout.flush();
-			pthread_mutex_unlock(&mutFeedingPots);
-			sem_post(&semFeedingPots);
 		}else if(motherRetired==true && fullPots ==0){
-			//cout<<"DEBUG:  motherEagle retired, Baby eagle "<<eagleId<<" Exiting"<<endl; 
 			pthread_mutex_unlock(&mutFeedingPots);
 			pthread_exit(NULL);
 		}
-	
 	}
-
 }
 
 /*should be called when a baby eagle finishes his meal.*/
@@ -281,10 +263,7 @@ void finish_eating(int eagleId){
 	if(motherRetired==true && fullPots==0){
 		pthread_exit(NULL);
 	}
-	
 }
-
-
 
 /******************************************************************************
 pthread_sleep takes an integer number of seconds to pause the current thread We
