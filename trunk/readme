@@ -2,8 +2,8 @@
 * login: masuij(login used to submit)
 * Linux
 * date: 03/28/11
-* name: Justin Masui,
-* emails: veks11@gmail.com*/
+* name: Justin Masui, Jeffrey Wong
+* emails: veks11@gmail.com, xterase2001@hotmail.com*/
 
 ####################################
  The purpose of your program
@@ -20,24 +20,104 @@ To compile:
 
 make 
 
+// the default on this is main and clean
 
 To clean:
 
 make clean
 
+// this will remove eaglefeed
+
 ####################################
  How to use the program from the shell (syntax)
 ####################################
 
-
+./eaglefeed a b c
+// where a is equal to the number of feeding pots
+// b is the number of baby eagles
+// c is the number feedings
 
 ####################################
 Expected Output
 ####################################  
 
-
+// using a sample run
+$ ./eaglefeed.out 4 6 2
+Mother eagle started.
+Mother eagle takes a nap
+Baby eagle 0 started.
+Baby eagle 0 ready to eat, fullPots= 0
+Mother eagle is awoke by baby eagle 0 and starts preparing food.
+Mother eagle says "Feeding (1)"
+Baby eagle 0 is eating using feeding pot 4
+Mother eagle takes a nap
+Baby eagle 0 finished eating
+ Baby eagle 1 started.
+Baby eagle 0 ready to eat, fullPots= 3
+ Baby eagle 1 ready to eat, fullPots= 3
+Baby eagle 0 is eating using feeding pot 3
+ Baby eagle 1 is eating using feeding pot 2
+Baby eagle 0 finished eating
+ Baby eagle 1 finished eating
+Baby eagle 0 ready to eat, fullPots= 1
+  Baby eagle 2 started.
+ Baby eagle 1 ready to eat, fullPots= 1
+ Baby eagle 1 is eating using feeding pot 1
+  Baby eagle 2 ready to eat, fullPots= 1
+Mother eagle is awoke by baby eagle 0 and starts preparing food.
+Mother eagle says "Feeding (2)"
+   Baby eagle 3 started.
+  Baby eagle 2 is eating using feeding pot 4
+ Baby eagle 1 finished eating
+Baby eagle 0 is eating using feeding pot 3
+    Baby eagle 4 started.
+     Baby eagle 5 started.
+   Baby eagle 3 ready to eat, fullPots= 4
+  Baby eagle 2 finished eating
+   Baby eagle 3 is eating using feeding pot 2
+ Baby eagle 1 ready to eat, fullPots= 3
+Baby eagle 0 finished eating
+ Baby eagle     Baby eagle 4 ready to eat, fullPots= 2
+1 is eating using feeding pot 1
+     Baby eagle 5 ready to eat, fullPots= 2
+  Baby eagle 2 ready to eat, fullPots= 2
+   Baby eagle 3 finished eating
+Baby eagle 0 ready to eat, fullPots= 1
+ Baby eagle 1 finished eating
+Mother eagle retires after serving 2 feedings.  Game ends!!!
 
 ####################################
  What exactly your program does
 ####################################  
 
+Use three semaphores.  One for the the feeding pots, one for the mother eagle and one for the waiting.
+The semaphore used on mother eagle is a binary semaphore.
+The semaphore used on the feeding pots is a counting semaphore.
+The semaphore used on the number of waiting eagles is a counting semaphore.
+We created one thread for the mother eagle and one thread for each baby eagle.
+The mother eagle thread does the following:
+sleep until baby eagle wakes her
+fills pots
+and goes back to sleep
+This repeats for the number for feedings specified in the input argument.
+
+The baby eagle threads does the following:
+
+get ready to eat
+eat from a full feeding pot
+finish eating
+play after eating
+This sequences of actions will repeat based on how many times the feeding pots get filled.
+
+
+One baby eagle will wakeup the mother eagle when the baby eagle is hungry and the mother change from sleeping
+to filling the empty pots.  For the ready to eat phase, a mutex lock is placed just before the check of the conditionals.
+The baby eagle has 4 conditions to check before getting fed.
+If the mother is not retired and the pots are full then the baby eagle may eat, the counting semaphore of pots is decremented and
+the mutex is unlocked.
+If the mother is not retired and not already awoken and the pots are empty then the baby is placed on a wait, the waiting
+semaphores is incrememted and the mutex is unlocked.  If the mother is not already woken then the mother semaphore is incremented
+and the baby eagle is placed on wait just like the above.
+If the mother is retired and the pots are empty, then the mutex and unlock the baby eagle thread is to exit.
+The game will end after the limit of the number feedings have been reached and all
+the feeding pots filled from that feeding is empty.
